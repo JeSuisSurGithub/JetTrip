@@ -4,8 +4,7 @@
 #include "common.h"
 
 #define MID_VALUE 128
-
-extern volatile uint8_t audio_sample;
+#define SAMPLE_COUNT 1024
 
 void init_analog_io();
 
