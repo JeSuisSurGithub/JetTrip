@@ -4,16 +4,16 @@
 #include <avr/interrupt.h>
 #include <stdint.h>
 
-#define CONTROL_FREQ 1000
+#define MAX_DIVIDER 16
 #define LFO_UPPER 4095
 #define LFO_LOWER 0
 
-// 0->4096 LFO, 0.25Hz
+// 0->4096 LFO, 24K/16 ~=0.183Hz
+// f_lfo = f_sample / 2 (up+down ramp) * divider * (lfo_up-lf_low)
+volatile uint8_t divider = 0;
 volatile uint16_t lfo_value = 0;
-volatile uint16_t lfo_inc = 1;
 volatile bool lfo_direction = 0;
 volatile int16_t delay = 0;
-volatile uint8_t divider = 0;
 
 volatile uint8_t samples[SAMPLE_COUNT];
 volatile uint16_t wr_idx = 0;
@@ -83,14 +83,12 @@ void init_analog_io()
 ISR(TIMER1_COMPA_vect)
 {
     divider++;
-    if (divider == 16) {
+    if (divider == MAX_DIVIDER) {
         divider = 0;
         if (!lfo_direction) {
-            lfo_value = lfo_value + lfo_inc;
-            lfo_direction = (lfo_value > LFO_UPPER - lfo_inc);
+            lfo_direction = (++lfo_value > LFO_UPPER - 1);
         } else {
-            lfo_value = lfo_value - lfo_inc;
-            lfo_direction = !(lfo_value < LFO_LOWER + lfo_inc);
+            lfo_direction = !(--lfo_value < LFO_LOWER + 1);
         }
 
         // /8 + 16, 0-4096 -> 16-528
@@ -104,7 +102,7 @@ ISR(TIMER1_COMPA_vect)
     // /2
     uint8_t mix = (adc >> 1) + (delayed >> 1);
 
-    samples[wr_idx] = adc + ((mix - MID_VALUE) >> 2);
+    samples[wr_idx] = adc + ((mix -MID_VALUE) >> 2);
 
     wr_idx = (wr_idx + 1) & 0x3FF;
     dac_write12(((uint16_t)mix << 4));
