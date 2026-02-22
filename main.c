@@ -64,7 +64,7 @@ uint16_t adc_read10(void) {
 }
 int main()
 {
-    for (int16_t i = 0; i < SAMPLE_COUNT; i++) { samples[i] = 128; }
+    for (int16_t i = 0; i < SAMPLE_COUNT; i++) { samples[i] = SAMPLE_MID_VAL; }
 
     // PB2 needs to be set as output to have master spi
     // DDRB |= (1 << PB2);
